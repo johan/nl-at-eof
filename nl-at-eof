@@ -47,7 +47,7 @@ fixNewlines = (path, cb) ->
           ;
 
         if count < length - 2
-          fs.truncate fd, start + count + 1, cb
+          fs.truncate fd, start + count + 2, cb
         else
           cb null, false # no changes needed
 
