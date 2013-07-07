@@ -1,0 +1,67 @@
+#! /usr/bin/env coffee
+# needs coffee-script 1.6.3 or later; 1.6.2 specifically won't do
+
+BUFFER_SIZE = 1024 # only clean up the tailing bytes of each file
+
+NL = 10
+
+_ = require 'underscore'
+fs = require 'graceful-fs'
+prog = require 'commander'
+async = require 'async'
+
+prog
+  .version('0.0.1')
+  .usage('<input files> - files to fix trailing newline errors in')
+  .parseExpectedArgs(['<input files>'])
+  .parse process.argv
+
+fixNewlines = (path, cb) ->
+  ->
+    start = length = fd = null
+    async.waterfall [
+
+      (cb) ->
+        fs.open path, 'r+', undefined, cb
+
+      (_fd, cb) ->
+        fs.fstat fd = _fd, cb
+
+      (stat, cb) ->
+        start = Math.max 0, stat.size - BUFFER_SIZE
+        length = stat.size - start
+        buffer = new Buffer BUFFER_SIZE + 1
+        if length
+          fs.read fd, buffer, 0, length, start, cb
+        else
+          cb null, 0, buffer
+
+      (count, buffer, cb) ->
+        return cb new Error "Failed to read file tail" unless count is length
+
+        if buffer[count - 1] isnt NL
+          buffer[count] = NL
+          return fs.write fd, buffer, 0, length = count + 1, start, cb
+
+        while count and buffer[--count] is NL
+          ;
+
+        if count < length - 2
+          fs.truncate fd, start + count + 1, cb
+        else
+          cb null, false # no changes needed
+
+    ], (err, changed) ->
+      if err?
+        if err.code is 'ENOENT'
+          console.error "#{path}: file does not exist"
+        else
+          console.error "#{path}: error - #{err?.message}"
+        return
+
+      console.log path unless changed is false
+
+files = {}
+files[path] = fixNewlines path  for path in _.uniq prog.args
+
+async.parallel files
