@@ -38,17 +38,17 @@ async.each _.uniq(prog.args), fixNewlines = (path) ->
     (count, buffer, cb) ->
       return cb new Error "Failed to read file tail" unless count is length
 
-      if buffer[count - 1] isnt NL
-        buffer[count] = NL
-        return fs.write fd, buffer, 0, length = count + 1, start, cb
+      if hasTrailingNL = buffer[lastChar = count - 1] is NL
+        while (lastChar >= 0) and (buffer[lastChar] is NL)
+          lastChar -= 1
 
-      while count and buffer[--count] is NL
-        ;
+        lengthAndOneNL = start + lastChar + 2
+        if length is lengthAndOneNL
+          return cb null, false # no changes needed
+        return fs.truncate fd, lengthAndOneNL, cb
 
-      if count < length - 1
-        fs.truncate fd, start + count + 1, cb
-      else
-        cb null, false # no changes needed
+      buffer[++lastChar] = NL
+      fs.write fd, buffer, 0, length = ++lastChar, start, cb
 
   ], (err, changed) ->
     if err?
@@ -58,4 +58,4 @@ async.each _.uniq(prog.args), fixNewlines = (path) ->
         console.error "#{path}: error - #{err?.message}"
       return
 
-    console.log path unless changed is false
+    console.log path  unless changed is false

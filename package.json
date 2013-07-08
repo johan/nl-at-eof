@@ -1,0 +1,9 @@
+{ "name": "nl-at-eof"
+, "version": "0.0.3"
+, "author": "Johan Sundström <oyasumi@gmail.com>"
+, "description": "Appends a newline at EOF / truncates off superfluous ones"
+, "main": "nl-at-eof"
+, "scripts":
+  { "test": "rm -rf tests/actual ; cp -rp tests/input tests/actual ; ./nl-at-eof tests/actual/* | sort -n > tests/actual/stdout ; diff -r tests/actual tests/expected"
+  }
+}
