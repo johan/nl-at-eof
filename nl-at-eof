@@ -16,7 +16,7 @@ prog
   .parseExpectedArgs(['<input files>'])
   .parse process.argv
 
-fixNewlines = (path) ->
+async.each _.uniq(prog.args), fixNewlines = (path) ->
   start = length = fd = null
   async.waterfall [
 
@@ -45,8 +45,8 @@ fixNewlines = (path) ->
       while count and buffer[--count] is NL
         ;
 
-      if count < length - 2
-        fs.truncate fd, start + count + 2, cb
+      if count < length - 1
+        fs.truncate fd, start + count + 1, cb
       else
         cb null, false # no changes needed
 
@@ -59,8 +59,3 @@ fixNewlines = (path) ->
       return
 
     console.log path unless changed is false
-
-files = {}
-files[path] = (-> fixNewlines path)  for path in _.uniq prog.args
-
-async.parallel files
